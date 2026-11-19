@@ -27,6 +27,7 @@ Restart=on-failure
 RestartSec=5
 MemoryHigh=75%
 MemoryMax=85%
+ExecStartPre=/usr/bin/python3 /opt/orca-workstation/orca/prepare-worktrees.py /workspace/home/orca/workspaces
 ExecStart=/opt/orca-server/bin/orca-ide serve --supervise --port 6768 --bind 0.0.0.0 --no-pairing --refuse-public
 [Install]
 WantedBy=multi-user.target

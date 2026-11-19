@@ -23,6 +23,7 @@ def load_module(name, path):
 
 codex = load_module("codex_settings", "agents/codex-bedrock/configure.py")
 access = load_module("orca_access", "platform/access/allow-client.py")
+worktrees = load_module("worktree_root", "platform/orca/prepare-worktrees.py")
 
 
 class PlatformTests(unittest.TestCase):
@@ -36,7 +37,7 @@ class PlatformTests(unittest.TestCase):
         host = self.resources["Host"]
         self.assertLess(len(host["Properties"]["UserData"]["Fn::Base64"]["Fn::Sub"].encode()), 16384)
         files = host["Metadata"]["AWS::CloudFormation::Init"]["config"]["files"]
-        for name in ("host/mount.sh", "access/install.sh", "orca/install.sh",
+        for name in ("host/mount.sh", "access/install.sh", "orca/install.sh", "orca/prepare-worktrees.py",
                      "verify", "agent/install.sh", "agent/activate.sh", "agent/verify.sh"):
             self.assertTrue(files[render.PREFIX + "/" + name]["content"].startswith("#!"))
         self.assertEqual(files[render.PREFIX + "/agent/arguments"]["content"],
@@ -53,6 +54,32 @@ class PlatformTests(unittest.TestCase):
         self.assertNotIn("BedrockRegion", shared)
         self.assertNotIn("openai.", shared)
         self.assertNotIn("bedrock-mantle:", shared)
+
+    def test_worktree_directory_migration_preserves_overrides_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(worktrees.os, "access", return_value=False):
+            state = Path(tmp)
+            target = state / "retained" / "worktrees"
+            data = state / "orca-data.json"
+            worktrees.prepare(state, target)
+            self.assertTrue(target.is_dir())
+            self.assertFalse(data.exists())
+            previous = {"settings": {"workspaceDir": worktrees.LEGACY, "nestWorkspaces": False},
+                        "repos": [{"worktreeBasePath": "/custom/location"}]}
+            data.write_text(json.dumps(previous))
+            worktrees.prepare(state, target)
+            migrated = json.loads(data.read_text())
+            self.assertEqual(migrated["repos"], previous["repos"])
+            self.assertEqual(migrated["settings"], {"workspaceDir": str(target), "nestWorkspaces": False,
+                             "workspaceDirHistory": [{"path": worktrees.LEGACY, "nestWorkspaces": False}]})
+            worktrees.prepare(state, target)
+            backups = list(state.glob("before-worktree-root-*"))
+            self.assertEqual(len(backups), 1)
+            self.assertEqual(json.loads(backups[0].read_text()), previous)
+            self.assertEqual(json.loads(data.read_text()), migrated)
+            previous["settings"]["workspaceDir"] = "/custom/default"
+            data.write_text(json.dumps(previous))
+            worktrees.prepare(state, target)
+            self.assertEqual(json.loads(data.read_text()), previous)
 
     def test_storage_iam_and_network_boundaries(self):
         host = self.resources["Host"]["Properties"]

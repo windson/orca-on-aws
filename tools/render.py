@@ -9,6 +9,7 @@ PLATFORM_FILES = {
     "host/mount.sh": "platform/host/mount.sh",
     "orca/install.sh": "platform/orca/install.sh",
     "orca/server.service": "platform/orca/server.service",
+    "orca/prepare-worktrees.py": "platform/orca/prepare-worktrees.py",
     "github/install.sh": "platform/integrations/github.sh",
     "orca/setup-workspace.sh": "platform/orca/setup-workspace.sh",
     "orca/session": "platform/orca/session",
