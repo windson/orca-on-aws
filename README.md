@@ -1,10 +1,11 @@
 # Orca workstation on AWS
 
-Deploy a persistent Linux workstation for Orca Desktop and Android. The first coding agent is OpenAI Codex with Amazon Bedrock inference. Projects, agent configuration, and Orca pairing state live on a separate encrypted disk. A paired phone connects directly to EC2 through Tailscale, including when the laptop is asleep.
+Deploy a persistent Linux workstation for Orca Desktop and Android. Codex and OpenCode can share one workstation and use Amazon Bedrock inference. Projects, agent configuration, and Orca pairing state live on a separate encrypted disk. A paired phone connects directly to EC2 through Tailscale, including when the laptop is asleep.
 
 | Agent | Status | Inference |
 | --- | --- | --- |
 | [Codex](agents/codex-bedrock/README.md) | Deployable | Amazon Bedrock, GPT-6.2 Sol by default |
+| [OpenCode](agents/opencode-bedrock/README.md) | Fresh host or add to existing Orca | Bedrock only, full upstream Bedrock picker |
 | [Kiro CLI](agents/kiro-cli/README.md) | Planned | To be specified |
 | [Claude Code](agents/claude-code-bedrock/README.md) | Planned | Amazon Bedrock |
 

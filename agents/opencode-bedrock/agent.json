@@ -1,0 +1,88 @@
+{
+  "name": "OpenCode on Amazon Bedrock",
+  "parameters": {
+    "OpenCodeRegion": {
+      "Type": "String",
+      "Default": "us-east-1",
+      "AllowedPattern": "[a-z]{2}(-[a-z0-9]+)+-[0-9]+",
+      "Description": "Bedrock source region for OpenCode"
+    }
+  },
+  "policies": [
+    {
+      "PolicyName": "OrcaOpenCodeBedrock",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "InvokeRegionalModels",
+            "Effect": "Allow",
+            "Action": [
+              "bedrock:InvokeModel",
+              "bedrock:InvokeModelWithResponseStream"
+            ],
+            "Resource": [
+              {
+                "Fn::Sub": "arn:${AWS::Partition}:bedrock:${OpenCodeRegion}::foundation-model/*"
+              },
+              {
+                "Fn::Sub": "arn:${AWS::Partition}:bedrock:${OpenCodeRegion}:${AWS::AccountId}:inference-profile/*"
+              }
+            ]
+          },
+          {
+            "Sid": "RouteBedrockInferenceProfiles",
+            "Effect": "Allow",
+            "Action": [
+              "bedrock:InvokeModel",
+              "bedrock:InvokeModelWithResponseStream"
+            ],
+            "Resource": {
+              "Fn::Sub": "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
+            },
+            "Condition": {
+              "ArnLike": {
+                "bedrock:InferenceProfileArn": {
+                  "Fn::Sub": "arn:${AWS::Partition}:bedrock:${OpenCodeRegion}:${AWS::AccountId}:inference-profile/*"
+                }
+              }
+            }
+          },
+          {
+            "Sid": "UseRegionalMantle",
+            "Effect": "Allow",
+            "Action": [
+              "bedrock-mantle:CreateInference",
+              "bedrock-mantle:ListModels",
+              "bedrock-mantle:GetModel",
+              "bedrock-mantle:GetProject"
+            ],
+            "Resource": {
+              "Fn::Sub": "arn:${AWS::Partition}:bedrock-mantle:${OpenCodeRegion}:${AWS::AccountId}:project/*"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "OpenCodeRegion": {
+      "Value": {
+        "Ref": "OpenCodeRegion"
+      }
+    }
+  },
+  "files": [
+    "install.sh",
+    "configure.py",
+    "activate.sh",
+    "verify.sh",
+    "picker.py",
+    "managed.json"
+  ],
+  "installArgs": [
+    {
+      "Ref": "OpenCodeRegion"
+    }
+  ]
+}

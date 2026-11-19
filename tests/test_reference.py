@@ -45,7 +45,7 @@ class PlatformTests(unittest.TestCase):
         self.assertIn("ReadyHandle", host["Properties"]["UserData"]["Fn::Base64"]["Fn::Sub"])
 
     def test_planned_modules_cannot_deploy(self):
-        self.assertEqual(render.supported_agents(), ["codex-bedrock"])
+        self.assertEqual(render.supported_agents(), ["codex-bedrock", "opencode-bedrock"])
         for name in ["kiro-cli", "claude-code-bedrock", "../platform"]:
             with self.assertRaises(ValueError):
                 render.template(name)

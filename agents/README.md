@@ -5,6 +5,7 @@ Each deployment selects one module with `--agent`. The shared AWS and Orca layer
 | Module | Status |
 | --- | --- |
 | [codex-bedrock](codex-bedrock/README.md) | Implemented |
+| [opencode-bedrock](opencode-bedrock/README.md) | Implemented, also installable alongside Codex |
 | [kiro-cli](kiro-cli/README.md) | Planned |
 | [claude-code-bedrock](claude-code-bedrock/README.md) | Planned |
 
