@@ -1,0 +1,7 @@
+#!/bin/bash
+# Run Orca's owner CLI in the same account and state directory as the service.
+set -euo pipefail
+export ORCA_USER_DATA_PATH=/workspace/orca-state
+XDG_RUNTIME_DIR=/run/user/$(id -u)
+export XDG_RUNTIME_DIR
+exec /opt/orca-server/bin/orca-ide "$@"

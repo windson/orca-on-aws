@@ -1,0 +1,12 @@
+name: Check workstation reference
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: python3 -m unittest discover -s tests
+      - run: python3 tools/render.py > "$RUNNER_TEMP/orca-template.json"
+      - run: git ls-files '*.sh' platform/orca/session | xargs shellcheck

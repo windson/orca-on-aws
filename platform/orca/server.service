@@ -1,0 +1,32 @@
+[Unit]
+Description=Orca remote development workstation
+Wants=network-online.target
+After=network-online.target orca-access.service
+Requires=orca-access.service
+RequiresMountsFor=/workspace
+[Service]
+User=orca
+Group=orca
+WorkingDirectory=/workspace/projects
+Environment=HOME=/workspace/home
+Environment=ORCA_USER_DATA_PATH=/workspace/orca-state
+Environment=XDG_RUNTIME_DIR=/run/user/2200
+Environment=PATH=/opt/orca-server/bin:/usr/local/bin:/usr/bin:/bin
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/user/2200 /workspace/home /workspace/projects /workspace/orca-state
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+RestrictSUIDSGID=true
+Restart=on-failure
+RestartSec=5
+MemoryHigh=75%
+MemoryMax=85%
+ExecStart=/opt/orca-server/bin/orca-ide serve --supervise --port 6768 --bind 0.0.0.0 --no-pairing --refuse-public
+[Install]
+WantedBy=multi-user.target

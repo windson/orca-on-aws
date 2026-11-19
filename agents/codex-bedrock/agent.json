@@ -1,0 +1,68 @@
+{
+  "name": "Codex on Amazon Bedrock",
+  "parameters": {
+    "BedrockRegion": {
+      "Type": "String",
+      "Default": "us-east-1",
+      "AllowedPattern": "[a-z]{2}-[a-z]+-[0-9]",
+      "Description": "Bedrock Mantle inference region"
+    }
+  },
+  "policies": [
+    {
+      "PolicyName": "CodexInference",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "OpenAIInferenceOnly",
+            "Effect": "Allow",
+            "Action": "bedrock-mantle:CreateInference",
+            "Resource": {
+              "Fn::Sub": "arn:${AWS::Partition}:bedrock-mantle:${BedrockRegion}:${AWS::AccountId}:project/*"
+            },
+            "Condition": {
+              "StringLike": {
+                "bedrock-mantle:Model": "openai.*"
+              }
+            }
+          },
+          {
+            "Sid": "ModelDiscovery",
+            "Effect": "Allow",
+            "Action": [
+              "bedrock-mantle:ListModels",
+              "bedrock-mantle:GetModel",
+              "bedrock-mantle:GetProject"
+            ],
+            "Resource": {
+              "Fn::Sub": "arn:${AWS::Partition}:bedrock-mantle:${BedrockRegion}:${AWS::AccountId}:project/*"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "InferenceRegion": {
+      "Value": {
+        "Ref": "BedrockRegion"
+      }
+    },
+    "DefaultModel": {
+      "Value": "openai.gpt-6.2-sol"
+    }
+  },
+  "files": [
+    "install.sh",
+    "configure.py",
+    "verify.sh",
+    "activate.py",
+    "activate.sh"
+  ],
+  "installArgs": [
+    {
+      "Ref": "BedrockRegion"
+    }
+  ]
+}

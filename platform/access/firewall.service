@@ -1,0 +1,10 @@
+[Unit]
+Description=Restrict Orca access to loopback and enrolled Tailscale clients
+Before=orca-server.service
+RequiresMountsFor=/workspace
+[Service]
+Type=oneshot
+ExecStart=/opt/orca-workstation/access/allow-client apply
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
