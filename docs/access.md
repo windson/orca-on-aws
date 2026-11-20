@@ -11,6 +11,13 @@ Orca listens on EC2 port 6768. The security group has zero inbound rules. On the
    tailscale ip -4
    ```
 
+   Set the name Orca reports in the Desktop and Mobile host pickers. Run these commands on EC2 as the Orca service user. The installed `orca-host` wrapper selects the server binary and points it at the running service’s state and owner socket. The readback should report `machineName` as `aws-orca` and `platform` as `linux`.
+
+   ```sh
+   sudo -iu orca /usr/local/bin/orca-host host name --name aws-orca --json
+   sudo -iu orca /usr/local/bin/orca-host host name --json
+   ```
+
 2. On the **phone or computer**, sign in to the same tailnet and turn the VPN on. Read the **client's own** Tailscale IPv4 address in its Tailscale app. If your tailnet uses access policies, allow this client to reach the workstation on TCP 6768.
 3. Back on EC2, replace `CLIENT_TAILSCALE_IPV4` with that client address. Repeat once per device. The command persists the allowlist on the encrypted workspace.
 
