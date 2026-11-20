@@ -13,6 +13,18 @@ Choose a compatible x86_64 Amazon Linux 2023 AMI with the NVIDIA driver installe
 
 The pin for Orca is in `platform/orca/install.sh` and Codex's pin is in its agent directory. Record the exact AMI ID and sizes from the preview to repeat a build. Tailscale and OS RPMs come from the configured repositories at install time. The AWS Backup service must be available in the EC2 region. Use **AWS Backup → Jobs** to verify the first completed workspace recovery point and periodically test restores.
 
+## Create a bot on EC2
+
+In Orca Desktop, choose **Bots → Create a bot**, select the paired EC2 host under **Computer**, then choose the agent and name. For the Codex deployment, choose **Codex → GPT-6.2 Sol**. With this reference, Orca stores bot homes and their memory under `/workspace/orca-state/bots/` on the retained volume.
+
+If the picker says the host “can’t run bots yet”, check what the paired server advertises from your desktop:
+
+```sh
+orca status --environment YOUR_PAIRED_HOST --json
+```
+
+Look for `bots.create.v1` in `result.runtime.capabilities`. Updating the desktop alone leaves the separately installed Linux server at its previous version. This reference pins the bot-capable Linux release and checks that capability during bootstrap. For an existing host, finish active work, back up its Orca profile and credentials, and replace the server package with the checksum-verified release. Reopen **New bot** after the host reconnects. [Orca 1.4.265 release](https://github.com/stablyai/orca/releases/tag/v1.4.265)
+
 ## Updates and debugging
 
 `deploy.py` only creates new stacks. Use a new name to test changes. CloudFormation user data runs on first boot. Applying an in-place template update can replace disks or hosts and does not reinstall all host components. Schedule OS and agent updates, review volume changes and make a recovery point before maintenance.

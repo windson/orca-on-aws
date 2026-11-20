@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-version=1.4.258
-digest=fd7f23f5fb6fe43fb2982d17438d772fac7cc65c8208a212d0ffb224b504e311
+version=1.4.265
+digest=eaba2039f351d47e2ddc5d1c1f0335df3ae81b5830565adc1bcba23fc7004d0c
 dir=$(mktemp -d)
 trap 'rm -rf "$dir"' EXIT
 curl --fail --silent --show-error --location --retry 3 \
