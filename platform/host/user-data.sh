@@ -12,6 +12,7 @@ signal_result() {
 trap signal_result EXIT
 /opt/aws/bin/cfn-init -v --stack '${AWS::StackName}' --resource Host --region '${AWS::Region}'
 cd /opt/orca-workstation
+dnf -y install git
 snapshot='${WorkspaceSnapshotId}'
 host/mount.sh '${WorkspaceVolume}' "$snapshot"
 access/install.sh

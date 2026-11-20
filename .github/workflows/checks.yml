@@ -8,5 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: python3 -m unittest discover -s tests
-      - run: python3 tools/render.py > "$RUNNER_TEMP/orca-template.json"
+      - name: Render each deployable agent
+        run: |
+          for agent in codex-bedrock opencode-bedrock kiro-cli; do
+            python3 tools/render.py --agent "$agent" > "$RUNNER_TEMP/$agent.json"
+          done
       - run: git ls-files '*.sh' platform/orca/session | xargs shellcheck

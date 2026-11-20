@@ -13,9 +13,11 @@ Deploy a persistent Linux workstation on Amazon EC2 for Orca Desktop and Android
 
 Use Python 3.9+, AWS CLI v2, an AWS CLI profile with deployment permissions, and a region with the chosen instance type. Install the AWS Session Manager plugin on your computer for the first connection. Install Orca Desktop or Orca Mobile on the clients you want to pair. Mobile also needs a Tailscale account and the Tailscale app. [AWS CLI installation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) · [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) · [Orca releases](https://github.com/stablyai/orca/releases) · [Tailscale clients](https://tailscale.com/download)
 
-1. From a clone of this repository, check your AWS identity and preview the deployment. The preview resolves the AMI and an offered availability zone, then submits the generated template to CloudFormation for validation.
+1. Clone the tagged reference, check your AWS identity and preview the deployment. The preview resolves the AMI and an offered availability zone, then submits the generated template to CloudFormation for validation.
 
    ```sh
+   git clone --branch v0.1.0 https://github.com/windson/orca-on-aws.git
+   cd orca-on-aws
    aws sts get-caller-identity --profile default
    python3 tools/deploy.py --stack aws-orca --region us-east-1 --plan
    ```
