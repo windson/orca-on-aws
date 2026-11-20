@@ -1,6 +1,6 @@
-# Orca workstation on AWS
+# AWS Orca
 
-Deploy a persistent Linux workstation for Orca Desktop and Android. Codex and OpenCode can share one workstation and use Amazon Bedrock inference. Projects, agent configuration, and Orca pairing state live on a separate encrypted disk. A paired phone connects directly to EC2 through Tailscale, including when the laptop is asleep.
+Deploy a persistent Linux workstation on Amazon EC2 for Orca Desktop and Android. Codex and OpenCode can share one workstation and use Amazon Bedrock inference. Projects, agent configuration, and Orca pairing state live on a separate encrypted disk. A paired phone connects directly to EC2 through Tailscale, including when the laptop is asleep.
 
 | Agent | Status | Inference |
 | --- | --- | --- |
@@ -17,19 +17,19 @@ Use Python 3.9+, AWS CLI v2, an AWS CLI profile with deployment permissions, and
 
    ```sh
    aws sts get-caller-identity --profile default
-   python3 tools/deploy.py --stack orca-dev --region us-east-1 --plan
+   python3 tools/deploy.py --stack aws-orca --region us-east-1 --plan
    ```
 
 2. Create the workstation with a new stack name. Creation waits for the disk mount, Orca listener, owner CLI, and agent setup. The command prints the instance ID, backup vault, and workspace volume ID. Reusing an existing stack name returns an error.
 
    ```sh
-   python3 tools/deploy.py --stack orca-dev --region us-east-1
+   python3 tools/deploy.py --stack aws-orca --region us-east-1
    ```
 
 3. Open an administrative session from the same computer. The following commands are for a POSIX shell. On Windows, use WSL or pass the instance ID from the stack outputs to the AWS CLI in PowerShell.
 
    ```sh
-   HOST_ID=$(aws cloudformation describe-stacks --stack-name orca-dev --region us-east-1 --profile default \
+   HOST_ID=$(aws cloudformation describe-stacks --stack-name aws-orca --region us-east-1 --profile default \
      --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue | [0]" --output text)
    aws ssm start-session --target "$HOST_ID" --region us-east-1 --profile default
    ```

@@ -7,7 +7,7 @@ Orca listens on EC2 port 6768. The security group has zero inbound rules. On the
 1. Use the SSM session from the quickstart. On **EC2**, join your tailnet and follow Tailscale's sign-in link. Choose a unique hostname for this workstation.
 
    ```sh
-   sudo tailscale up --hostname=orca-dev
+   sudo tailscale up --hostname=aws-orca
    tailscale ip -4
    ```
 

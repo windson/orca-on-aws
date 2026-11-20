@@ -62,12 +62,12 @@ The mount script matches the EBS serial, checks the XFS filesystem and layout ma
 Stopping the EC2 instance takes Orca offline and stops instance compute charges. EBS and backups can continue to incur charges. For permanent teardown, first record the region, stack outputs and the recovery point you want to keep. Finish active work, stop the instance and wait for it to stop so the workspace can detach cleanly.
 
 ```sh
-aws cloudformation describe-stacks --stack-name orca-dev --profile default --region us-east-1 \
+aws cloudformation describe-stacks --stack-name aws-orca --profile default --region us-east-1 \
   --query 'Stacks[0].Outputs' --output table
 aws ec2 stop-instances --instance-ids "$HOST_ID" --profile default --region us-east-1
 aws ec2 wait instance-stopped --instance-ids "$HOST_ID" --profile default --region us-east-1
-aws cloudformation delete-stack --stack-name orca-dev --profile default --region us-east-1
-aws cloudformation wait stack-delete-complete --stack-name orca-dev --profile default --region us-east-1
+aws cloudformation delete-stack --stack-name aws-orca --profile default --region us-east-1
+aws cloudformation wait stack-delete-complete --stack-name aws-orca --profile default --region us-east-1
 ```
 
 The workspace disk and backup vault are retained. When permanently decommissioning, confirm the disk ID against your saved output and check it is detached. Delete that volume if you no longer need its data. Remove any unwanted recovery points under the vault's retention policy, then delete the empty vault. Include any separately created snapshots or restore-test volumes in your cleanup. Remove the old machine and paired devices from the tailnet and Orca clients.
