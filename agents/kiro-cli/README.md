@@ -17,3 +17,15 @@ sudo env ORCA_RUN_USER="$run_user" bash agents/kiro-cli/verify.sh
 1. Open a terminal in the remote Orca workspace. Run `kiro-cli login --use-device-flow` and complete the authorization in your browser. This puts the login on the computer where the agent runs. Use `kiro-cli whoami` in the same terminal to confirm. [Kiro authentication](https://kiro.dev/docs/getting-started/authentication/)
 2. Choose **Kiro** as the workspace agent and open its **Terminal**. Orca 1.4.265 launches `kiro-cli chat --tui` and reports that Kiro has no structured chat session on this version.
 3. To verify inference with your Kiro account, run `kiro-cli chat --no-interactive --trust-tools= 'Reply exactly KIRO_READY. Use no tools.'` from a trusted remote directory. This uses Kiro credits. The installation check itself runs offline after package download.
+
+Orca lists Kiro as **Auto-setup** under **Settings → Agents**. It discovers `kiro-cli` on the workspace host's PATH. For a nonstandard installation, enter the absolute executable path in the agent's **Command** field. [Orca supported agents](https://orca.dev/docs/agents/supported) · [Orca remote servers](https://orca.dev/docs/remote-servers)
+
+### Device approval succeeds but the CLI exits
+
+If `InvalidGrantException` appears before you approve the browser request, run `kiro-cli login --use-device-flow --verbose` in the affected Orca terminal. Keep the device code and sign-in URL private. If the CLI reports `Failed to write device registration` and `attempt to write a readonly database`, inspect the filesystem that terminal sees:
+
+```sh
+findmnt -T "$(realpath ~/.local/share/kiro-cli)" -o TARGET,VFS-OPTIONS
+```
+
+Kiro needs to persist the registration before polling for its token. On a hardened server, place both the Kiro data and configuration directories on encrypted storage the Orca service user can write from inside the service. Start a fresh device login after fixing storage. The reference deployment keeps the service user's home under the writable `/workspace/home`.
