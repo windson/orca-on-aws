@@ -1,0 +1,8 @@
+{
+  "name": "Kiro CLI",
+  "parameters": {},
+  "outputs": {},
+  "policies": [],
+  "files": ["install.sh", "activate.sh", "verify.sh"],
+  "installArgs": []
+}

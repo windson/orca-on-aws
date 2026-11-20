@@ -46,14 +46,22 @@ class PlatformTests(unittest.TestCase):
         self.assertIn("ReadyHandle", host["Properties"]["UserData"]["Fn::Base64"]["Fn::Sub"])
 
     def test_planned_modules_cannot_deploy(self):
-        self.assertEqual(render.supported_agents(), ["codex-bedrock", "opencode-bedrock"])
-        for name in ["kiro-cli", "claude-code-bedrock", "../platform"]:
+        self.assertEqual(render.supported_agents(), ["codex-bedrock", "kiro-cli", "opencode-bedrock"])
+        for name in ["claude-code-bedrock", "../platform"]:
             with self.assertRaises(ValueError):
                 render.template(name)
         shared = (ROOT / "infra/aws/base.json").read_text()
         self.assertNotIn("BedrockRegion", shared)
         self.assertNotIn("openai.", shared)
         self.assertNotIn("bedrock-mantle:", shared)
+
+    def test_kiro_install_does_not_require_inference_permissions_or_owner_credentials(self):
+        resources = render.template("kiro-cli")["Resources"]
+        self.assertFalse(any(key.startswith("AgentPolicy") for key in resources))
+        files = resources["Host"]["Metadata"]["AWS::CloudFormation::Init"]["config"]["files"]
+        self.assertEqual(files[render.PREFIX + "/agent/arguments"]["content"], {"Fn::Join": ["\n", []]})
+        for script in ("install", "activate", "verify"):
+            self.assertIn(render.PREFIX + "/agent/" + script + ".sh", files)
 
     def test_worktree_directory_migration_preserves_overrides_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(worktrees.os, "access", return_value=False):

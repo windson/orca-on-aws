@@ -6,7 +6,7 @@ Each deployment selects one module with `--agent`. The shared AWS and Orca layer
 | --- | --- |
 | [codex-bedrock](codex-bedrock/README.md) | Implemented |
 | [opencode-bedrock](opencode-bedrock/README.md) | Implemented, also installable alongside Codex |
-| [kiro-cli](kiro-cli/README.md) | Planned |
+| [kiro-cli](kiro-cli/README.md) | Implemented for Orca terminals. Sign in on the remote host. |
 | [claude-code-bedrock](claude-code-bedrock/README.md) | Planned |
 
 ## Add a module
@@ -16,4 +16,4 @@ Each deployment selects one module with `--agent`. The shared AWS and Orca layer
 3. Verify local installation without billing or device interaction. Fresh workspaces then run `activate.sh` to select the system account and configure the agent in Orca. Restores preserve the owner's existing Orca preferences. Provide an explicit inference check for providers that bill by usage.
 4. Document model access, region selection, versions and client setup. Add tests for template composition, config ownership and preservation, and a live smoke procedure. Only add a runnable manifest when the installer and checks exist.
 
-The two planned integrations have no manifests. They are absent from deploy's choices until implemented.
+Claude Code on Bedrock is planned. Its module will appear in the deployment choices when implemented.

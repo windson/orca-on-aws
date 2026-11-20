@@ -6,7 +6,7 @@ Deploy a persistent Linux workstation on Amazon EC2 for Orca Desktop and Android
 | --- | --- | --- |
 | [Codex](agents/codex-bedrock/README.md) | Deployable | Amazon Bedrock, GPT-6.2 Sol by default |
 | [OpenCode](agents/opencode-bedrock/README.md) | Fresh host or add to existing Orca | Bedrock only, full upstream Bedrock picker |
-| [Kiro CLI](agents/kiro-cli/README.md) | Planned | To be specified |
+| [Kiro CLI](agents/kiro-cli/README.md) | Orca terminal agent, Kiro sign-in required | Bedrock through the Kiro service |
 | [Claude Code](agents/claude-code-bedrock/README.md) | Planned | Amazon Bedrock |
 
 ## Deploy
@@ -34,7 +34,7 @@ Use Python 3.9+, AWS CLI v2, an AWS CLI profile with deployment permissions, and
    aws ssm start-session --target "$HOST_ID" --region us-east-1 --profile default
    ```
 
-4. Inside that session, run one small inference request. A successful check ends with exit code zero after Codex returns `ORCA_READY`. This request incurs Bedrock usage. Then pair each client and add your Git checkout to the remote host. [Desktop and Android pairing](docs/access.md) · [Codex setup and first chat](agents/codex-bedrock/README.md)
+4. For the default Codex deployment, run one small inference request inside that session. A successful check ends with exit code zero after Codex returns `ORCA_READY`. This request incurs Bedrock usage. For Kiro, pair the client and complete the remote sign-in in its agent guide. [Desktop and Android pairing](docs/access.md) · [Codex setup and first chat](agents/codex-bedrock/README.md) · [Kiro sign-in and first chat](agents/kiro-cli/README.md)
 
    ```sh
    sudo /opt/orca-workstation/agent/verify.sh --inference
