@@ -17,6 +17,17 @@ The pin for Orca is in `platform/orca/install.sh` and Codex's pin is in its agen
 
 In Orca Desktop, choose **Bots → Create a bot**, select the paired EC2 host under **Computer**, then choose the agent and name. For the Codex deployment, choose **Codex → GPT-6.2 Sol**. With this reference, Orca stores bot homes and their memory under `/workspace/orca-state/bots/` on the retained volume.
 
+### OpenCode is missing from the desktop bot picker
+
+Orca Desktop 1.4.265 detects installed agents on the selected computer but checks chat support and model choices against the Mac when creating a bot. This can hide OpenCode even when the EC2 host runs it. Check the host's installed agents from the paired desktop with `orca agent installed --environment YOUR_PAIRED_HOST --json`.
+
+- **Create a bot whose home agent is OpenCode.** In Orca Mobile, open **Bots → + → New bot**. Select the EC2 host under **Runs on** if several computers are listed. Tap the agent row, choose **OpenCode**, name the bot and tap **Create**. The phone reads `bots.agentChoices` directly from the selected computer. The new bot also appears in the paired desktop's Bots sidebar.
+- **Use OpenCode in an existing AWS bot on the Mac.** Open the bot, click **New tab (+)** beside **Home**, then choose **New chat with … · OpenCode**. Check the new chat's model picker for an `amazon-bedrock/…` model. The home chat keeps its original agent.
+
+For maintainers building Orca Desktop from the `v1.4.265` source, the [paired bot picker patch](../platform/orca/paired-bot-picker-1.4.265.patch) passes the selected host to both checks and includes a regression test for switching computers. From that Orca source checkout run `git apply --check /path/to/paired-bot-picker-1.4.265.patch` and then `git apply /path/to/paired-bot-picker-1.4.265.patch`. The patch belongs in the desktop build. An EC2 server update alone cannot change the installed Mac picker. [Desktop picker](https://github.com/stablyai/orca/blob/v1.4.265/src/renderer/src/components/bots/use-bot-agent-choices.ts) · [Mobile host lookup](https://github.com/stablyai/orca/blob/v1.4.265/mobile/src/bots/new-bot-host-reads.ts)
+
+### The host cannot run bots yet
+
 If the picker says the host “can’t run bots yet”, check what the paired server advertises from your desktop:
 
 ```sh

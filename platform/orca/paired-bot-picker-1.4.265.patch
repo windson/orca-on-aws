@@ -1,0 +1,75 @@
+diff --git a/src/renderer/src/components/bots/use-bot-agent-choices.ts b/src/renderer/src/components/bots/use-bot-agent-choices.ts
+index d8cdee4..265a359 100644
+--- a/src/renderer/src/components/bots/use-bot-agent-choices.ts
++++ b/src/renderer/src/components/bots/use-bot-agent-choices.ts
+@@ -10,9 +10,6 @@ import type {
+ } from '../agent/launch-menu/new-tab-agent-menu-model'
+ import { botAgentChoices } from '../../../../shared/bots/bot-agent-choices'
+
+-// A bot lives in a folder workspace on its host.
+-const BOT_HOME: AgentMenuRowsTarget = { workspace: { kind: 'folder' } }
+-
+ /** The host's agent menu, for the bot agent picker, and the agents a bot can be set to there. */
+ export function useBotAgentMenu(
+   hostId: ExecutionHostId,
+@@ -25,7 +22,11 @@ export function useBotAgentMenu(
+       ? { kind: 'runtime', environmentId: target.environmentId }
+       : target
+   }, [hostId])
+-  const model = useNewTabAgentMenuRows(BOT_HOME, open, detection)
++  const home = useMemo<AgentMenuRowsTarget>(
++    () => ({ workspace: { kind: 'folder', executionHostId: hostId } }),
++    [hostId]
++  )
++  const model = useNewTabAgentMenuRows(home, open, detection)
+   return { model, choices: botAgentChoices(model, current) }
+ }
+
+diff --git a/src/renderer/src/components/bots/use-bot-agent-choices.test.ts b/src/renderer/src/components/bots/use-bot-agent-choices.test.ts
+new file mode 100644
+index 0000000..b98b4a1
+--- /dev/null
++++ b/src/renderer/src/components/bots/use-bot-agent-choices.test.ts
+@@ -0,0 +1,42 @@
++// @vitest-environment happy-dom
++import { cleanup, renderHook } from '@testing-library/react'
++import { afterEach, expect, it, vi } from 'vitest'
++import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
++import { useNewTabAgentMenuRows } from '../agent/launch-menu/use-new-tab-agent-menu-rows'
++import { useBotAgentMenu } from './use-bot-agent-choices'
++
++vi.mock('@/lib/bot-hosts', () => ({
++  botHostTarget: (id: ExecutionHostId) =>
++    id === 'local'
++      ? { kind: 'local' }
++      : { kind: 'environment', environmentId: id.slice('runtime:'.length) }
++}))
++vi.mock('../agent/launch-menu/use-new-tab-agent-menu-rows', () => ({
++  useNewTabAgentMenuRows: vi.fn(() => ({ state: 'loading', placeholderCount: 2 }))
++}))
++
++afterEach(() => {
++  cleanup()
++  vi.clearAllMocks()
++})
++
++it('checks chat support and detects installed agents on the same computer after switching hosts', () => {
++  const local: ExecutionHostId = 'local'
++  const paired: ExecutionHostId = 'runtime:paired'
++  const initialProps: { host: ExecutionHostId } = { host: local }
++  const menu = renderHook(({ host }) => useBotAgentMenu(host, true), {
++    initialProps
++  })
++  menu.rerender({ host: paired })
++  expect(useNewTabAgentMenuRows).toHaveBeenLastCalledWith(
++    { workspace: { kind: 'folder', executionHostId: paired } },
++    true,
++    { kind: 'runtime', environmentId: 'paired' }
++  )
++  menu.rerender({ host: local })
++  expect(useNewTabAgentMenuRows).toHaveBeenLastCalledWith(
++    { workspace: { kind: 'folder', executionHostId: local } },
++    true,
++    { kind: 'local' }
++  )
++})

@@ -19,6 +19,8 @@ Fresh hosts can use `python3 tools/deploy.py --stack orca-opencode --agent openc
 
 On the paired desktop or mobile client, select the AWS host and a project. Create an **OpenCode** chat. Open its model picker and select an `amazon-bedrock/…` entry. In an OpenCode terminal, use `/models`. Existing sessions can retain an explicit model.
 
+For a bot on a paired host, see [OpenCode in the bot picker](../../docs/operations.md#opencode-is-missing-from-the-desktop-bot-picker).
+
 The upstream catalog follows models.dev. The root-owned Linux managed configuration at `/etc/opencode/opencode.jsonc` enables only `amazon-bedrock`. OpenCode applies this setting after user and project settings. The entire Bedrock picker stays available, including models using Bedrock Runtime and Mantle. Model invocation depends on region, route, account entitlements and organization policies. Some models require an inference profile, a provider agreement or additional onboarding. Catalog refresh contacts a metadata service. Model inference uses AWS.
 
 ## Verify
