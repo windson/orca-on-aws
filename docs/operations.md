@@ -19,6 +19,8 @@ python -c 'import torch; x = torch.arange(16, device="cuda"); print(x.square().s
 
 The pin for Orca is in `platform/orca/install.sh` and Codex's pin is in its agent directory. Record the exact AMI ID and sizes from the preview to repeat a build. Tailscale and OS RPMs come from the configured repositories at install time. The AWS Backup service must be available in the EC2 region. Use **AWS Backup → Jobs** to verify the first completed workspace recovery point and periodically test restores.
 
+For monthly AWS charges and first-year ownership costs, compare the always-on and 160-hour schedules before changing host size or uptime. [Workstation cost breakdown](costs.md)
+
 ## Create a bot on EC2
 
 In Orca Desktop, choose **Bots → Create a bot**, select the paired EC2 host under **Computer**, then choose the agent and name. For the Codex deployment, choose **Codex → GPT-6.2 Sol**. With this reference, Orca stores bot homes and their memory under `/workspace/orca-state/bots/` on the retained volume.

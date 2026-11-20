@@ -21,7 +21,7 @@ AWS permissions follow the workload. The instance profile supplies temporary Bed
 
 Use Python 3.9+, AWS CLI v2, an AWS CLI profile with deployment permissions, and a region with the chosen instance type. Install the AWS Session Manager plugin on your computer for the first connection. Install Orca Desktop or Orca Mobile on the clients you want to pair. Mobile also needs a Tailscale account and the Tailscale app. [AWS CLI installation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) · [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) · [Orca releases](https://github.com/stablyai/orca/releases) · [Tailscale clients](https://tailscale.com/download)
 
-1. Clone the tagged reference and preview the deployment. Version 0.2.0 defaults to the deployed G5 and disk sizes for a new stack. G5 costs more to run than T3. If your builds and SDKs only need CPU, set `ORCA_INSTANCE_TYPE=t3.large` in the example. The preview resolves an AMI and an offered Availability Zone, then validates the template with CloudFormation.
+1. Clone the tagged reference and preview the deployment. Version 0.2.0 defaults to the deployed G5 and disk sizes for a new stack. At US East (N. Virginia) list prices, the always-on example with Bedrock usage is $940.91/month on G5 or $116.89/month on T3. [Cost breakdown, schedules and first-year TCO](docs/costs.md). If your builds and SDKs only need CPU, set `ORCA_INSTANCE_TYPE=t3.large` in the example. The preview resolves an AMI and an offered Availability Zone, then validates the template with CloudFormation.
 
    ```sh
    git clone --branch v0.2.0 https://github.com/windson/orca-on-aws.git
@@ -53,7 +53,7 @@ Use Python 3.9+, AWS CLI v2, an AWS CLI profile with deployment permissions, and
    sudo /opt/orca-workstation/agent/verify.sh --inference
    ```
 
-The GPU example incurs G5 compute charges while running. The stock AMI needs an NVIDIA driver for CUDA workloads. Use a compatible GPU-ready AMI with `--ami-id` on both commands, or install the driver after boot. Check G-instance quotas, regional availability and Bedrock access first. EC2, EBS, snapshots, public IPv4, detailed monitoring and inference have separate charges. The reference schedules daily workspace backups with 14-day retention. [GPU setup, costs, backup and teardown](docs/operations.md) · [AWS Pricing Calculator](https://calculator.aws/)
+The GPU example incurs G5 compute charges while running. The stock AMI needs an NVIDIA driver for CUDA workloads. Use a compatible GPU-ready AMI with `--ami-id` on both commands, or install the driver after boot. Check G-instance quotas, regional availability and Bedrock access first. EC2, EBS, snapshots, public IPv4, detailed monitoring and inference have separate charges. The reference schedules daily workspace backups with 14-day retention. [GPU setup, backup and teardown](docs/operations.md) · [AWS Pricing Calculator](https://calculator.aws/)
 
 ## Layout
 
