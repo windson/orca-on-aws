@@ -1,5 +1,17 @@
 # Orca worktrees, workspace setup and GitHub integration
 
+## Create a project from an empty folder
+
+Orca initializes the repository and makes an empty `Initial commit`. Before using **Create a new project**, set the author once in an Orca terminal on the host that will own the project. Use the name and email you want recorded in future commits. For GitHub privacy, use the no-reply address shown in your GitHub email settings.
+
+```sh
+git config --global user.name "Your chosen commit name"
+git config --global user.email "Your chosen commit email"
+(cd /tmp && git var GIT_AUTHOR_IDENT && git var GIT_COMMITTER_IDENT)
+```
+
+If Orca reports **Git author identity is not configured**, return to the dialog and click **Create project** after setting both values. GitHub sign-in authenticates repository access. Git reads the author of the first commit from the remote user's Git configuration, before the new repository has any settings of its own.
+
 ## Where child worktrees are created
 
 On a fresh host, Orca creates worktrees under the service user's retained home at
