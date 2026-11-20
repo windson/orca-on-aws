@@ -17,7 +17,8 @@ def main():
     parser.add_argument("--region", default="us-east-1")
     parser.add_argument("--profile", default="default")
     parser.add_argument("--agent", choices=supported_agents(), default="codex-bedrock")
-    parser.add_argument("--instance-type", default="t3.large", choices=["t3.medium", "t3.large", "g5.2xlarge"])
+    parser.add_argument("--instance-type", default="g5.2xlarge", choices=["t3.medium", "t3.large", "g5.2xlarge"],
+                        help="New host size (default: g5.2xlarge with an NVIDIA A10G; t3.large is CPU-only)")
     parser.add_argument("--az", help="Use a specific offered Availability Zone")
     parser.add_argument("--ami-id", help="Pin a compatible x86_64 Amazon Linux 2023 Nitro AMI")
     parser.add_argument("--root-gib", type=int, default=30)

@@ -14,6 +14,17 @@ The deployer's AWS profile needs CloudFormation, EC2/VPC/EBS, Backup, IAM role a
 
 Code running as the workstation user can use the instance role. Codex's Bedrock policy limits inference to OpenAI models in the selected account and region. The backup role is separate. Add project-specific AWS access deliberately and scope it to the project. The reference grants no general IAM administration or SDK installation through sudo.
 
+## Which permission to change
+
+| Symptom or requirement | Where authority lives | How to check it |
+| --- | --- | --- |
+| The agent discovers a model but Bedrock denies an inference request | The EC2 instance profile supplies temporary credentials. The selected agent's IAM policy must allow the operation, model route and region. OpenCode adds Bedrock Runtime and inference-profile access for the models it uses. | Run a small request with the intended model from a fresh agent session. |
+| A project needs to deploy AWS resources | Grant use of a separately administered, project-scoped deployment role to the intended workstation. Scope that role to the project's resources and actions. Keep changes to the role's trust and permissions with its administrator. | Check the acting identity inside the deployment workflow and test its smallest required action. |
+| A Python SDK cannot install into its project or open the GPU | The Orca Linux user's directory ownership, device access and service restrictions apply. Use a writable project environment. An administrator owns OS packages, GPU drivers and any service device overrides. | Check the paths and device access inside the actual agent or terminal process. Run the [CUDA calculation](operations.md#size-and-region) there. |
+| A command still asks for confirmation | A fresh turn uses the agent's effective approval policy. Full access can run commands under the process's existing OS and AWS permissions. | Start a new turn after changing Orca's picker and check its effective policy. |
+
+These choices arose on the deployed host when an additional agent needed Bedrock APIs, a project needed deployment permissions, and a local SDK needed CUDA. Fresh installations use the selected agent's inference policy and the reference's protected service account. An operator who adds project deployment access must also review that role's trust, grants and permissions boundary independently. [EC2 instance roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html) · [IAM role permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_manage_modify.html)
+
 ## Network review
 
 The AWS IaC MCP security rules flag the public IPv4, internet gateway default route, and HTTPS egress to any IPv4 destination. These support package downloads, Bedrock, SSM and Tailscale's HTTPS relay. There is no listening port allowed by the AWS security group. The scanner also flags missing instance-level `SubnetId`. The template assigns the host to its VPC subnet in `NetworkInterfaces[0].SubnetId`; setting both properties is invalid in EC2. Sites with private-subnet-only policies need an egress design covering all of those destinations before using this blueprint.

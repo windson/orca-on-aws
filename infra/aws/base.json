@@ -10,7 +10,8 @@
     },
     "InstanceType": {
       "Type": "String",
-      "Default": "t3.large",
+      "Default": "g5.2xlarge",
+      "Description": "GPU development workstation. Choose t3.large for a lower-cost CPU host.",
       "AllowedValues": [
         "t3.medium",
         "t3.large",

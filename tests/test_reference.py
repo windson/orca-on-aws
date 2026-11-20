@@ -1,5 +1,6 @@
 import importlib.util
 import json
+from configparser import ConfigParser
 from pathlib import Path
 import re
 import subprocess
@@ -105,6 +106,39 @@ class PlatformTests(unittest.TestCase):
         inference = self.resources["AgentPolicy0"]["Properties"]["PolicyDocument"]["Statement"][0]
         self.assertEqual(inference["Condition"]["StringLike"]["bedrock-mantle:Model"], "openai.*")
 
+    def test_runtime_and_backup_have_separate_roles_for_each_agent(self):
+        for agent in render.supported_agents():
+            with self.subTest(agent=agent):
+                resources = render.template(agent)["Resources"]
+                self.assertEqual(resources["Host"]["Properties"]["IamInstanceProfile"], {"Ref": "HostProfile"})
+                self.assertEqual(resources["HostProfile"]["Properties"]["Roles"], [{"Ref": "HostRole"}])
+                target = resources["BackupSelection"]["Properties"]["BackupSelection"]["IamRoleArn"]
+                self.assertEqual(target, {"Fn::GetAtt": ["BackupRole", "Arn"]})
+                for role, service in (("HostRole", "ec2.amazonaws.com"), ("BackupRole", "backup.amazonaws.com")):
+                    trust = resources[role]["Properties"]["AssumeRolePolicyDocument"]["Statement"]
+                    self.assertEqual([s["Principal"] for s in trust], [{"Service": service}])
+                host_policies = resources["HostRole"]["Properties"]["ManagedPolicyArns"]
+                expected = [
+                    {"Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"},
+                    {"Ref": "ParameterStoreBoundary"},
+                ]
+                expected.extend({"Ref": name} for name in resources if name.startswith("AgentPolicy"))
+                self.assertCountEqual(host_policies, expected)
+
+    def test_orca_service_runs_unprivileged_with_a_writable_workspace(self):
+        files = self.resources["Host"]["Metadata"]["AWS::CloudFormation::Init"]["config"]["files"]
+        unit = ConfigParser(interpolation=None, strict=False)
+        unit.read_string(files[render.PREFIX + "/orca/server.service"]["content"])
+        service = unit["Service"]
+        self.assertEqual((service["User"], service["Group"]), ("orca", "orca"))
+        self.assertTrue(service.getboolean("NoNewPrivileges"))
+        self.assertEqual(service["CapabilityBoundingSet"], "")
+        self.assertEqual(service["ProtectSystem"], "strict")
+        self.assertEqual(service["WorkingDirectory"], "/workspace/projects")
+        self.assertCountEqual(service["ReadWritePaths"].split(), [
+            "/run/user/2200", "/workspace/home", "/workspace/projects", "/workspace/orca-state",
+        ])
+
     def test_model_catalog_and_preserved_operator_settings(self):
         bundled = {s: {"slug": s, "display_name": s} for s in codex.MODELS}
         with tempfile.TemporaryDirectory() as temp, mock.patch.object(codex, "bundled_models", return_value=bundled):
@@ -174,6 +208,20 @@ class DeployTests(unittest.TestCase):
         self.assertTrue(all("default" in cmd for cmd in commands))
         self.assertFalse(any("create-stack" in cmd for cmd in commands))
         run.assert_not_called()
+
+    def test_fresh_deployment_capacity_and_cpu_override(self):
+        template_params = render.template("codex-bedrock")["Parameters"]
+        capacity = {"InstanceType": "g5.2xlarge", "RootVolumeSizeGiB": "30", "WorkspaceVolumeSizeGiB": "150"}
+        for key, value in capacity.items():
+            self.assertEqual(str(template_params[key]["Default"]), value)
+        for args, instance_type in (([], "g5.2xlarge"), (["--instance-type", "t3.large"], "t3.large")):
+            with self.subTest(instance_type=instance_type):
+                commands, _ = self.simulate(args)
+                offerings = next(c for c in commands if "describe-instance-type-offerings" in c)
+                self.assertIn("Name=instance-type,Values=" + instance_type, offerings)
+                create = next(c for c in commands if "create-stack" in c)
+                params = {p["ParameterKey"]: p["ParameterValue"] for p in json.loads(create[create.index("--parameters") + 1])}
+                self.assertEqual({key: params[key] for key in capacity}, {**capacity, "InstanceType": instance_type})
 
     def test_create_passes_selected_region_and_waits_for_bootstrap(self):
         commands, run = self.simulate(["--profile", "demo", "--parameter", "BedrockRegion=us-west-2"])

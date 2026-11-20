@@ -2,14 +2,20 @@
 
 ## Size and region
 
-Bedrock runs inference in its service region. Size EC2 for the work that executes in Orca, including builds, browsers, SDKs, and parallel terminals. A GPU is useful when project code uses CUDA. Check regional offerings and GPU quotas. For example, preview an A10G workstation with 8 vCPUs and 32 GiB RAM using the following command.
+Bedrock runs inference in its service region. Size EC2 for builds, browsers, SDKs and parallel terminals. The deployed workstation used the following capacity on 20 November 2026. Check regional offerings, GPU quota and pricing before provisioning it. [Deployment decisions and verified state](deployment-experience.md)
 
 ```sh
 python3 tools/deploy.py --stack orca-gpu --region us-east-1 \
-  --instance-type g5.2xlarge --root-gib 50 --workspace-gib 250 --plan
+  --instance-type g5.2xlarge --root-gib 30 --workspace-gib 150 --plan
 ```
 
-Choose a compatible x86_64 Amazon Linux 2023 AMI with the NVIDIA driver installed, or install and verify a supported driver as the administrator. Pass a tested AMI with `--ami-id` and select the intended zone with `--az`. The normal Amazon Linux image installs the workstation software only. Run `nvidia-smi` and a representative SDK operation in the Orca session that will use the GPU. Keep durable data on `/workspace`. Instance-store NVMe is disposable.
+Choose a compatible x86_64 Amazon Linux 2023 AMI with the NVIDIA driver installed, or install and verify a supported driver as the administrator. Pass a tested AMI with `--ami-id` and select the intended zone with `--az`. The stock image and bootstrap install the workstation software. GPU workloads also need the driver, device access and project libraries. The deployed host used a root-managed device setup and the service's supplementary `video` group to expose the required NVIDIA devices. Inspect device ownership and service restrictions on your AMI. Keep durable data on `/workspace`. Instance-store NVMe is disposable.
+
+On the deployed host, driver `580.196.07` and a project environment with CUDA-enabled PyTorch ran this check from an Orca terminal. The expected answer is `1240`. Install a compatible PyTorch build in the project's environment before running it. Repeat the operation from native agent subprocesses if they also need CUDA. They can have different device access from the terminal. [AWS NVIDIA driver installation for AL2023](https://docs.aws.amazon.com/linux/al2023/ug/nvidia-drivers.html)
+
+```sh
+python -c 'import torch; x = torch.arange(16, device="cuda"); print(x.square().sum().item())'
+```
 
 The pin for Orca is in `platform/orca/install.sh` and Codex's pin is in its agent directory. Record the exact AMI ID and sizes from the preview to repeat a build. Tailscale and OS RPMs come from the configured repositories at install time. The AWS Backup service must be available in the EC2 region. Use **AWS Backup → Jobs** to verify the first completed workspace recovery point and periodically test restores.
 
@@ -19,10 +25,10 @@ In Orca Desktop, choose **Bots → Create a bot**, select the paired EC2 host un
 
 ### OpenCode is missing from the desktop bot picker
 
-Orca Desktop 1.4.265 detects installed agents on the selected computer but checks chat support and model choices against the Mac when creating a bot. This can hide OpenCode even when the EC2 host runs it. Check the host's installed agents from the paired desktop with `orca agent installed --environment YOUR_PAIRED_HOST --json`.
+Orca Desktop 1.4.265 detects installed agents on the selected computer but checks chat support and model choices against the local computer when creating a bot. This can hide OpenCode even when the EC2 host runs it. Check the host's installed agents from the paired desktop with `orca agent installed --environment YOUR_PAIRED_HOST --json`.
 
 - **Create a bot whose home agent is OpenCode.** In Orca Mobile, open **Bots → + → New bot**. Select the EC2 host under **Runs on** if several computers are listed. Tap the agent row, choose **OpenCode**, name the bot and tap **Create**. The phone reads `bots.agentChoices` directly from the selected computer. The new bot also appears in the paired desktop's Bots sidebar.
-- **Use OpenCode in an existing AWS bot on the Mac.** Open the bot, click **New tab (+)** beside **Home**, then choose **New chat with … · OpenCode**. Check the new chat's model picker for an `amazon-bedrock/…` model. The home chat keeps its original agent.
+- **Use OpenCode in an existing AWS bot on the desktop.** Open the bot, click **New tab (+)** beside **Home**, then choose **New chat with … · OpenCode**. Check the new chat's model picker for an `amazon-bedrock/…` model. The home chat keeps its original agent.
 
 **Use a patched desktop build.** Apply the [paired bot picker patch](../platform/orca/paired-bot-picker-1.4.265.patch) in an Orca source checkout at `v1.4.265`. It uses the selected computer for both agent checks. OpenCode also needs a directory to list models. Before a new bot has a home, the picker asks the host to list models in its configured floating workspace. An existing workspace takes precedence. The bot still runs in its own home after creation.
 
