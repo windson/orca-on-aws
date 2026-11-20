@@ -1,5 +1,199 @@
+diff --git a/src/renderer/src/components/agent/agent-launch-picker-acquisition.test.ts b/src/renderer/src/components/agent/agent-launch-picker-acquisition.test.ts
+index 69359435..a2b1fe86 100644
+--- a/src/renderer/src/components/agent/agent-launch-picker-acquisition.test.ts
++++ b/src/renderer/src/components/agent/agent-launch-picker-acquisition.test.ts
+@@ -1,6 +1,7 @@
+ // @vitest-environment happy-dom
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+ import type { RuntimeRpcResponse } from '../../../../shared/remote-runtime/rpc/runtime-rpc-envelope'
++import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
+ import type { AgentPickerEntry } from '../../../../shared/agent-launch/picker/agent-launch-picker'
+ import { agentPickerModels } from '../../../../shared/agent-launch/picker/agent-launch-picker-catalog'
+ import { unwrapRuntimeRpcResult } from '@/runtime/rpc/calls/runtime-rpc-result'
+@@ -13,14 +14,14 @@ import { agentPickerModelCatalogReads } from './agent-launch-picker-host-reads'
+
+ const mocks = vi.hoisted(() => {
+   const responses: RuntimeRpcResponse<unknown>[] = []
+-  const calls: { method: string; params: unknown }[] = []
++  const calls: { target: RuntimeClientTarget; method: string; params: unknown }[] = []
+   return { responses, calls }
+ })
+
+ // The remote runtime transport: each call answers with the next wire envelope the host sent.
+ vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({
+-  callRuntimeRpc: async (_target: unknown, method: string, params: unknown) => {
+-    mocks.calls.push({ method, params })
++  callRuntimeRpc: async (target: RuntimeClientTarget, method: string, params: unknown) => {
++    mocks.calls.push({ target, method, params })
+     const response = mocks.responses.shift()
+     if (!response) {
+       throw new Error('unexpected call')
+@@ -106,6 +107,38 @@ describe('agent picker catalog acquisition against a remote runtime', () => {
+     vi.useRealTimers()
+   })
+
++  it('uses the paired host’s fallback folder only for a folderless OpenCode catalog', async () => {
++    const target: RuntimeClientTarget = { kind: 'environment', environmentId: 'paired-server' }
++    const fallbackWorktrees = { opencode: 'id:global-floating-terminal' }
++    const openCode: AgentPickerEntry = { ...pi, agent: 'opencode', label: 'OpenCode' }
++    const signal = new AbortController().signal
++    const draft = agentPickerModelCatalogReads({ target, fallbackWorktrees })
++    const workspace = agentPickerModelCatalogReads({
++      target,
++      fallbackWorktrees,
++      worktree: 'id:repo::/home/me/project'
++    })
++    mocks.responses.push(piCatalog, piCatalog, piCatalog)
++
++    await draft.catalog(openCode, false, signal)
++    await workspace.catalog(openCode, false, signal)
++    await draft.catalog(pi, false, signal)
++
++    expect(mocks.calls).toEqual([
++      {
++        target,
++        method: 'agentSession.modelCatalog',
++        params: { agent: 'opencode', worktree: 'id:global-floating-terminal' }
++      },
++      {
++        target,
++        method: 'agentSession.modelCatalog',
++        params: { agent: 'opencode', worktree: 'id:repo::/home/me/project' }
++      },
++      { target, method: 'agentSession.modelCatalog', params: { agent: 'pi' } }
++    ])
++  })
++
+   it('retries an older host that refused the read before its chat host was built', async () => {
+     mocks.responses.push(refusal('hostDisabled'), piCatalog)
+     const picker = observe('host-not-built')
+diff --git a/src/renderer/src/components/agent/agent-launch-picker-host-reads.ts b/src/renderer/src/components/agent/agent-launch-picker-host-reads.ts
+index d1547e81..0f2df6d6 100644
+--- a/src/renderer/src/components/agent/agent-launch-picker-host-reads.ts
++++ b/src/renderer/src/components/agent/agent-launch-picker-host-reads.ts
+@@ -15,10 +15,13 @@ import { isAgentChatPermissionChoice } from '../../../../shared/agent-launch/per
+ import type { AgentPickerEntry } from '../../../../shared/agent-launch/picker/agent-launch-picker'
+ import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
+
++export type CatalogWorktrees = Readonly<Partial<Record<AgentPickerEntry['agent'], string>>>
++
+ export function agentPickerModelCatalogReads(
+   input: Omit<ModelMenuReadScope, 'agent' | 'target'> & {
+     target: RuntimeClientTarget | null
+     cliDiscoveryRuntime?: RuntimeGitContext | null
++    fallbackWorktrees?: CatalogWorktrees
+   }
+ ) {
+   const { target, cliDiscoveryRuntime } = input
+@@ -39,7 +42,11 @@ export function agentPickerModelCatalogReads(
+                 }
+               )
+             : readModelMenuCatalog(
+-                { ...input, target, agent: entry.agent },
++                {
++                  target,
++                  agent: entry.agent,
++                  worktree: input.worktree ?? input.fallbackWorktrees?.[entry.agent]
++                },
+                 waitForListing,
+                 signal
+               ),
+diff --git a/src/renderer/src/components/agent/use-agent-launch-picker-inventory.ts b/src/renderer/src/components/agent/use-agent-launch-picker-inventory.ts
+index b3126ea9..1fdceb02 100644
+--- a/src/renderer/src/components/agent/use-agent-launch-picker-inventory.ts
++++ b/src/renderer/src/components/agent/use-agent-launch-picker-inventory.ts
+@@ -34,7 +34,8 @@ import { resolveWorktreeModelDiscoveryRuntime } from '../native-chat/session/opt
+ import { agentPickerListsCliModels } from './agent-launch-picker-cli-model-catalog'
+ import {
+   agentPickerModelCatalogReads,
+-  readAgentPickerLaunchSupport
++  readAgentPickerLaunchSupport,
++  type CatalogWorktrees
+ } from './agent-launch-picker-host-reads'
+ import { AGENT_SESSION_COHERENT_MODEL_CATALOG_CAPABILITY } from '../../../../shared/agent-session/capabilities/structured-agent-session-surface-capabilities'
+ import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
+@@ -56,17 +57,19 @@ export function useAgentLaunchPickerInventory(
+   worktreeId: string | undefined,
+   model: NewTabAgentMenuModel,
+   open: boolean,
+-  selected?: AgentPickerEntry['agent']
++  selected?: AgentPickerEntry['agent'],
++  fallbackWorktrees?: CatalogWorktrees
+ ): AgentPickerEntry[] {
+   return useAgentPickerInventoryEntries(
+-    useAgentLaunchPickerInventorySource(worktreeId, model, open, selected)
++    useAgentLaunchPickerInventorySource(worktreeId, model, open, selected, fallbackWorktrees)
+   )
+ }
+ export function useAgentLaunchPickerInventorySource(
+   worktreeId: string | undefined,
+   model: NewTabAgentMenuModel,
+   open: boolean,
+-  selected?: AgentPickerEntry['agent']
++  selected?: AgentPickerEntry['agent'],
++  fallbackWorktrees?: CatalogWorktrees
+ ): AgentPickerInventorySource {
+   const store = useAppStateView()
+   const viewActive = useAppStateViewActive()
+@@ -174,7 +177,12 @@ export function useAgentLaunchPickerInventorySource(
+       : discoveryWorktreeId
+         ? ownerRuntime
+         : { ...ownerRuntime, worktreePath: repo?.path ?? '' }
+-  const reads = agentPickerModelCatalogReads({ target, worktree: selector, cliDiscoveryRuntime })
++  const reads = agentPickerModelCatalogReads({
++    target,
++    worktree: selector,
++    cliDiscoveryRuntime,
++    fallbackWorktrees
++  })
+   const observesHostCatalog =
+     model.state === 'settled' && model.rows.some(reads.refreshOnInvalidation)
+   const key = useMemo(
+@@ -187,6 +195,7 @@ export function useAgentLaunchPickerInventorySource(
+         ...(observesHostCatalog ? [registeredAgents, coherentCatalog] : []),
+         worktreeId,
+         selector,
++        fallbackWorktrees,
+         executionHostId,
+         model.state === 'settled' ? model.rows : [],
+         model.state === 'settled' ? model.detection.detectedIds : [],
+@@ -204,6 +213,7 @@ export function useAgentLaunchPickerInventorySource(
+       context,
+       worktreeId,
+       selector,
++      fallbackWorktrees,
+       executionHostId,
+       model,
+       settings,
+diff --git a/src/renderer/src/components/bots/BotAgentLaunchPicker.tsx b/src/renderer/src/components/bots/BotAgentLaunchPicker.tsx
+index c0b6e4ed..0a84ee71 100644
+--- a/src/renderer/src/components/bots/BotAgentLaunchPicker.tsx
++++ b/src/renderer/src/components/bots/BotAgentLaunchPicker.tsx
+@@ -18,8 +18,12 @@ import {
+   type AgentChatPermissionMode
+ } from '../../../../shared/agent-launch/permissions/agent-chat-permission-mode'
+ import { isBotAgent, type BotAgent } from '../../../../shared/bot-types'
++import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/workspace/identity/floating-workspace-id'
+ import { botLaunchFromChoices, type BotLaunch } from '../../../../shared/bots/bot-launch'
+
++// An OpenCode listing needs a directory before the bot has its own home.
++const catalogWorktrees = { opencode: `id:${FLOATING_TERMINAL_WORKTREE_ID}` }
++
+ export type BotAgentSetup = {
+   agent: BotAgent
+   launch?: BotLaunch
+@@ -148,7 +152,8 @@ export function BotAgentLaunchPicker({
+     undefined,
+     model,
+     menuOpen,
+-    catalogAgent ?? value.agent
++    catalogAgent ?? value.agent,
++    catalogWorktrees
+   )
+   const { entries, draftForEntry } = useBotAgentPickerEntries(
+     observed,
 diff --git a/src/renderer/src/components/bots/use-bot-agent-choices.ts b/src/renderer/src/components/bots/use-bot-agent-choices.ts
-index d8cdee4..265a359 100644
+index d8cdee4e..265a3590 100644
 --- a/src/renderer/src/components/bots/use-bot-agent-choices.ts
 +++ b/src/renderer/src/components/bots/use-bot-agent-choices.ts
 @@ -10,9 +10,6 @@ import type {
@@ -27,7 +221,7 @@ index d8cdee4..265a359 100644
 
 diff --git a/src/renderer/src/components/bots/use-bot-agent-choices.test.ts b/src/renderer/src/components/bots/use-bot-agent-choices.test.ts
 new file mode 100644
-index 0000000..b98b4a1
+index 00000000..b98b4a1e
 --- /dev/null
 +++ b/src/renderer/src/components/bots/use-bot-agent-choices.test.ts
 @@ -0,0 +1,42 @@
